@@ -43,26 +43,29 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 	private float swipeStartTime;
 	private float targetX;
 
+	public delegate void SelectedItemChanged(Transform selectedItem);
+	public event SelectedItemChanged OnSelectedItemChanged;
 
-	private void OnEnable() {
+
+	protected virtual void OnEnable() {
 		SubscribeBtnsEvent();
 	}
 
-	private void SubscribeBtnsEvent() {
+	protected void SubscribeBtnsEvent() {
 		if (leftBtn)
 			leftBtn.onClick.AddListener(SlideLeft);
 		if (rightBtn)
 			rightBtn.onClick.AddListener(SlideRight);
 	}
 
-	private void SlideLeft() {
+	protected virtual void SlideLeft() {
 		StopCoroutine("SmoothLerp");
 		currrentItemIndex = GetLeftItemIndex();
 		targetX = GetItemPositionX(currrentItemIndex, itemWidth);
 		StartCoroutine("SmoothLerp");
 	}
 
-	private void SlideRight() {
+	protected virtual void SlideRight() {
 		StopCoroutine("SmoothLerp");
 		currrentItemIndex = GetRightItemIndex();
 		targetX = GetItemPositionX(currrentItemIndex, itemWidth);
@@ -70,12 +73,12 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 	}
 
 
-	private void Start() {
+	protected virtual void Start() {
 		if (initializeOnAwake)
 			Initialize();
 	}
 
-	public void Initialize() {
+	public virtual void Initialize() {
 		canvas = GetComponentInParent<Canvas>();
 		mainTransform = GetComponent<RectTransform>();
 		scrollRect = GetComponent<ScrollRect>();
@@ -91,13 +94,13 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 		PlaceToDefaultPosition(currrentItemIndex, itemWidth);
 	}
 
-	private RectTransform GetSetupedContainer() {
+	protected RectTransform GetSetupedContainer() {
 		RectTransform content = scrollRect.content;
 		content.pivot = new Vector2(0f, 1f);
 		return content;
 	}
 
-	private int CheckAndGetDefaultIndex(List<RectTransform> _items) {
+	protected int CheckAndGetDefaultIndex(List<RectTransform> _items) {
 		if (_items.Count > 0) {
 			if (defaultItemIndex >= _items.Count)
 				return 0;
@@ -108,19 +111,19 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 		return -1;
 	}
 
-	private void PlaceToDefaultPosition(int index, float _itemWidth) {
+	protected virtual void PlaceToDefaultPosition(int index, float _itemWidth) {
 		Vector2 targetPosition = container.position;
 		targetPosition.x = GetItemPositionX(index, _itemWidth);
 		container.position = targetPosition;
 		Canvas canvas = GetComponent<Canvas>();
 	}
 
-	private float GetItemPositionX(int index, float _itemWidth) {
+	protected virtual float GetItemPositionX(int index, float _itemWidth) {
 		return (mainTransform.position.x - ((_itemWidth * index + spacing * index + _itemWidth / 2f) * canvas.scaleFactor));
 	}
 
 
-	public void OnBeginDrag(PointerEventData eventData) {
+	public virtual void OnBeginDrag(PointerEventData eventData) {
 		StopCoroutine("SmoothLerp");
 
 		startDragPosition = eventData.position.x;
@@ -128,13 +131,13 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 	}
 
 
-	public void OnEndDrag(PointerEventData eventData) {
+	public virtual void OnEndDrag(PointerEventData eventData) {
 		scrollRect.StopMovement();
 		TryToSwipe(eventData.position.x);
 		StartCoroutine("SmoothLerp");
 	}
 
-	private void TryToSwipe(float endPosition) {
+	protected virtual void TryToSwipe(float endPosition) {
 		float deltaX = (endPosition - startDragPosition) / Screen.width;
 
 		if (Swiped(deltaX)) {
@@ -149,26 +152,27 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 		}
 
 		targetX = GetItemPositionX(currrentItemIndex, itemWidth);
+		NotifyAboutItemChanged();
 	}
 
-	private bool Swiped(float deltaX) {
+	protected virtual bool Swiped(float deltaX) {
 		float deltaTime = Time.time - swipeStartTime;
 		return deltaTime < swipeDuration && Mathf.Abs(deltaX) > distanceToSwipe;
 	}
 
-	private int GetRightItemIndex() {
+	protected virtual int GetRightItemIndex() {
 		if (currrentItemIndex < container.childCount - 1)
 			return currrentItemIndex + 1;
 		return currrentItemIndex;
 	}
 
-	private int GetLeftItemIndex() {
+	protected virtual int GetLeftItemIndex() {
 		if (currrentItemIndex > 0)
 			return currrentItemIndex - 1;
 		return currrentItemIndex;
 	}
 
-	private int GetNearestItemIndex() {
+	protected virtual int GetNearestItemIndex() {
 		RectTransform nearestItem = items[currrentItemIndex];
 		float minDistance = Mathf.Abs(nearestItem.position.x - mainTransform.position.x);
 		foreach (RectTransform item in items) {
@@ -181,7 +185,12 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 		return items.IndexOf(nearestItem);
 	}
 
-	private IEnumerator SmoothLerp() {
+	protected virtual void NotifyAboutItemChanged() {
+		if (OnSelectedItemChanged != null)
+			OnSelectedItemChanged(GetCurrentItem());
+	}
+
+	protected virtual IEnumerator SmoothLerp() {
 		float timer = 0f;
 		Vector2 originPosition = container.position;
 		Vector2 targetPosition = new Vector2(targetX, originPosition.y);
@@ -195,18 +204,18 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 		container.position = targetPosition;
 	}
 
-	private void OnDisable() {
+	protected virtual void OnDisable() {
 		UnsubscribeOnBntsEvents();
 	}
 
-	private void UnsubscribeOnBntsEvents() {
+	protected void UnsubscribeOnBntsEvents() {
 		if (leftBtn)
 			leftBtn.onClick.RemoveListener(SlideLeft);
 		if (rightBtn)
 			rightBtn.onClick.RemoveListener(SlideRight);
 	}
 
-	public Transform GetCurrentItem() {
+	public virtual Transform GetCurrentItem() {
 		return items[currrentItemIndex];
 	}
 }
