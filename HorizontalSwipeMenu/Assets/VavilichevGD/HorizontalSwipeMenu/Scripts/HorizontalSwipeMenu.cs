@@ -47,6 +47,9 @@ namespace VavilichevGD {
 		public delegate void SelectedItemChanged(Transform selectedItem);
 		public event SelectedItemChanged OnSelectedItemChanged;
 
+		public delegate void InitializedEvent();
+		public event InitializedEvent OnInitialized;
+
 
 		protected virtual void OnEnable() {
 			SubscribeBtnsEvent();
@@ -93,6 +96,7 @@ namespace VavilichevGD {
 			itemWidth = items[currrentItemIndex].sizeDelta.x;
 
 			PlaceToDefaultPosition(currrentItemIndex, itemWidth);
+			NotifyAboutInitialized();
 		}
 
 		protected RectTransform GetSetupedContainer() {
@@ -121,6 +125,11 @@ namespace VavilichevGD {
 
 		protected virtual float GetItemPositionX(int index, float _itemWidth) {
 			return (mainTransform.position.x - ((_itemWidth * index + spacing * index + _itemWidth / 2f) * canvas.scaleFactor));
+		}
+
+		protected void NotifyAboutInitialized() {
+			if (OnInitialized != null)
+				OnInitialized();
 		}
 
 
@@ -217,6 +226,8 @@ namespace VavilichevGD {
 		}
 
 		public virtual Transform GetCurrentItem() {
+			if (items == null)
+				return null;
 			return items[currrentItemIndex];
 		}
 	}
