@@ -81,9 +81,9 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 		scrollRect = GetComponent<ScrollRect>();
 		container = GetSetupedContainer();
 
-		RectTransform[] itemsArray = container.GetComponentsInChildren<RectTransform>();
-		items = new List<RectTransform>(itemsArray);
-		items.RemoveAt(0);  // Remove container RectTransform;
+		items = new List<RectTransform>();
+		foreach (Transform child in container)
+			items.Add(child.GetComponent<RectTransform>());
 
 		currrentItemIndex = CheckAndGetDefaultIndex(items);
 		itemWidth = items[currrentItemIndex].sizeDelta.x;
@@ -142,6 +142,7 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 				currrentItemIndex = GetRightItemIndex();
 			else
 				currrentItemIndex = GetLeftItemIndex();
+
 		}
 		else {
 			currrentItemIndex = GetNearestItemIndex();
@@ -203,5 +204,9 @@ public class HorizontalSwipeMenu : MonoBehaviour, IBeginDragHandler, IEndDragHan
 			leftBtn.onClick.RemoveListener(SlideLeft);
 		if (rightBtn)
 			rightBtn.onClick.RemoveListener(SlideRight);
+	}
+
+	public Transform GetCurrentItem() {
+		return items[currrentItemIndex];
 	}
 }
